@@ -67,7 +67,9 @@
     if (conferenceLink) conferenceLink.href = config.officialConferenceUrl || "https://icml.cc/Conferences/2026";
 
     configureRsvp();
+    configureSpeakerApplication();
     configureEmail();
+    configureQrCode();
   }
 
   function configureRsvp() {
@@ -100,6 +102,43 @@
     });
   }
 
+  function configureSpeakerApplication() {
+    const url = String(config.speakerApplicationUrl || "").trim();
+    const hasUrl = url.length > 0;
+    const labelText = hasUrl
+      ? (state.lang === "ko" ? "발표자로 신청" : "Apply to speak")
+      : (state.lang === "ko" ? "발표자 신청 준비 중" : "Speaker application opening soon");
+
+    document.querySelectorAll(".speaker-button-label").forEach((label) => {
+      label.textContent = labelText;
+    });
+
+    document.querySelectorAll(".speaker-application-link").forEach((link) => {
+      link.onclick = null;
+      if (hasUrl) {
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noreferrer";
+        link.classList.remove("is-disabled");
+        link.removeAttribute("aria-disabled");
+      } else {
+        link.href = "#speaker-application";
+        link.removeAttribute("target");
+        link.removeAttribute("rel");
+        link.classList.add("is-disabled");
+        link.setAttribute("aria-disabled", "true");
+        link.onclick = speakerApplicationPlaceholderNotice;
+      }
+    });
+  }
+
+  function speakerApplicationPlaceholderNotice(event) {
+    event.preventDefault();
+    showToast(state.lang === "ko"
+      ? "event-config.js에 발표자 신청 링크를 입력하세요."
+      : "Add the speaker application URL in event-config.js.");
+  }
+
   function configureEmail() {
     const email = String(config.organizerEmail || "").trim();
     const isPlaceholder = !email || email.includes("REPLACE_WITH") || email.endsWith("@example.com");
@@ -122,6 +161,76 @@
   function placeholderEmailNotice(event) {
     event.preventDefault();
     showToast(state.lang === "ko" ? "event-config.js에서 주최자 이메일을 설정하세요." : "Set the organizer email in event-config.js.");
+  }
+
+  function configureQrCode() {
+    const qr = config.qrCode && typeof config.qrCode === "object" ? config.qrCode : {};
+    const imageUrl = String(qr.imageUrl || "").trim();
+    const linkUrl = String(qr.linkUrl || "").trim();
+    const link = byId("qr-link");
+    const image = byId("qr-image");
+    const placeholder = byId("qr-placeholder");
+    const label = byId("qr-label");
+    const helper = byId("qr-helper");
+
+    if (!link || !image || !placeholder || !label || !helper) return;
+
+    label.textContent = localized(qr.label, state.lang === "ko" ? "신청 QR 코드" : "Application QR code");
+    helper.textContent = localized(
+      qr.helper,
+      state.lang === "ko"
+        ? "event-config.js에서 QR 이미지와 연결 주소를 설정하세요."
+        : "Set the QR image and destination in event-config.js."
+    );
+    image.alt = localized(qr.alt, state.lang === "ko" ? "신청 QR 코드" : "Application QR code");
+
+    const revealImage = () => {
+      image.classList.add("is-visible");
+      placeholder.classList.add("is-hidden");
+    };
+    const revealPlaceholder = () => {
+      image.classList.remove("is-visible");
+      placeholder.classList.remove("is-hidden");
+    };
+
+    image.onload = revealImage;
+    image.onerror = revealPlaceholder;
+    if (imageUrl) {
+      if (image.getAttribute("src") !== imageUrl) image.src = imageUrl;
+      if (image.complete && image.naturalWidth > 0) revealImage();
+      else if (!image.complete) revealPlaceholder();
+    } else {
+      image.removeAttribute("src");
+      revealPlaceholder();
+    }
+
+    link.onclick = null;
+    if (linkUrl) {
+      link.href = linkUrl;
+      link.classList.remove("is-disabled");
+      link.removeAttribute("aria-disabled");
+      if (/^https?:\/\//i.test(linkUrl)) {
+        link.target = "_blank";
+        link.rel = "noreferrer";
+      } else {
+        link.removeAttribute("target");
+        link.removeAttribute("rel");
+      }
+    } else {
+      link.href = "#rsvp";
+      link.removeAttribute("target");
+      link.removeAttribute("rel");
+      link.classList.add("is-disabled");
+      link.setAttribute("aria-disabled", "true");
+      link.onclick = qrPlaceholderNotice;
+    }
+  }
+
+  function qrPlaceholderNotice(event) {
+    event.preventDefault();
+    showToast(state.lang === "ko"
+      ? "event-config.js에서 QR 코드 연결 주소를 설정하세요."
+      : "Set the QR-code destination in event-config.js.");
   }
 
   function updateCountdown() {
