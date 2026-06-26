@@ -65,10 +65,6 @@ window.EVENT_CONFIG = Object.freeze({
       en: "Organizer email QR",
       ko: "주최자 이메일 QR"
     },
-    helper: {
-      en: "Replace this image with an RSVP or speaker-application QR code when the form is ready.",
-      ko: "신청 폼이 준비되면 참가 또는 발표 신청용 QR 이미지로 교체할 수 있습니다."
-    },
     alt: {
       en: "QR code for contacting the organizer by email",
       ko: "주최자 이메일 문의용 QR 코드"
