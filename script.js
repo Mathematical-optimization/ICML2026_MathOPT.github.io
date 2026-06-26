@@ -2,10 +2,22 @@
   "use strict";
 
   const config = window.EVENT_CONFIG || {};
+  const byId = (id) => document.getElementById(id);
 
   function readStoredLanguage() {
-    try { return localStorage.getItem("opt-meetup-lang"); }
-    catch (_) { return null; }
+    try {
+      const stored = localStorage.getItem("opt-meetup-lang");
+      return stored === "ko" || stored === "en" ? stored : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function detectDefaultLanguage() {
+    const stored = readStoredLanguage();
+    if (stored) return stored;
+    const navLang = String(navigator.language || "").toLowerCase();
+    return navLang.startsWith("ko") ? "ko" : "en";
   }
 
   function storeLanguage(lang) {
@@ -13,11 +25,10 @@
     catch (_) { /* Storage can be unavailable on local files or privacy-restricted browsers. */ }
   }
 
-  const state = { lang: readStoredLanguage() || "ko" };
-  const byId = (id) => document.getElementById(id);
+  const state = { lang: detectDefaultLanguage() };
 
   function localized(value, fallback = "") {
-    if (value && typeof value === "object") return value[state.lang] || value.en || fallback;
+    if (value && typeof value === "object") return value[state.lang] || value.en || value.ko || fallback;
     return value ?? fallback;
   }
 
@@ -45,7 +56,7 @@
 
   function populateConfig() {
     const values = {
-      "date-status": localized(config.dateStatus, "Tentative schedule"),
+      "date-status": localized(config.dateStatus, "Confirmed"),
       "date-label": localized(config.dateLabel),
       "location-label": localized(config.locationLabel),
       "coffee-venue": localized(config.coffeeVenue),
@@ -54,14 +65,13 @@
       "fee-label": localized(config.feeLabel),
       "fee-summary": localized(config.feeLabel),
       "notice-label": localized(config.noticeLabel),
-      "footer-event-name": localized(config.eventName, "ICML 2026 Mathematical Optimization Meetup")
+      "footer-event-name": localized(config.eventName, "ICML 2026 Mathematical Optimization Coffee Chat & Dinner")
     };
 
     Object.entries(values).forEach(([id, value]) => {
       const node = byId(id);
-      if (node) node.textContent = value;
+      if (node && value) node.textContent = value;
     });
-
 
     const conferenceLink = byId("conference-link");
     if (conferenceLink) conferenceLink.href = config.officialConferenceUrl || "https://icml.cc/Conferences/2026";
@@ -84,6 +94,7 @@
     }
 
     links.forEach((link) => {
+      link.onclick = null;
       if (hasRsvp) {
         link.href = config.rsvpUrl;
         link.target = "_blank";
@@ -94,19 +105,30 @@
         link.href = "#rsvp";
         link.removeAttribute("target");
         link.removeAttribute("rel");
-        if (link.closest(".rsvp-actions")) {
-          link.classList.add("is-disabled");
-          link.setAttribute("aria-disabled", "true");
-        }
+        link.classList.add("is-disabled");
+        link.setAttribute("aria-disabled", "true");
+        link.onclick = rsvpPlaceholderNotice;
       }
     });
   }
 
+  function rsvpPlaceholderNotice(event) {
+    event.preventDefault();
+    showToast(state.lang === "ko"
+      ? "event-config.js에 참가 신청 링크를 입력하세요."
+      : "Add the RSVP URL in event-config.js.");
+  }
+
   function configureSpeakerApplication() {
-    const url = String(config.speakerApplicationUrl || "").trim();
+    const speakerUrl = String(config.speakerApplicationUrl || "").trim();
+    const rsvpUrl = String(config.rsvpUrl || "").trim();
+    const url = speakerUrl || rsvpUrl;
     const hasUrl = url.length > 0;
+    const usesRsvp = hasUrl && rsvpUrl && url === rsvpUrl;
     const labelText = hasUrl
-      ? (state.lang === "ko" ? "발표자로 신청" : "Apply to speak")
+      ? (usesRsvp
+          ? (state.lang === "ko" ? "발표 희망 표시하기" : "Indicate speaker interest")
+          : (state.lang === "ko" ? "발표자로 신청" : "Apply to speak"))
       : (state.lang === "ko" ? "발표자 신청 준비 중" : "Speaker application opening soon");
 
     document.querySelectorAll(".speaker-button-label").forEach((label) => {
@@ -135,8 +157,8 @@
   function speakerApplicationPlaceholderNotice(event) {
     event.preventDefault();
     showToast(state.lang === "ko"
-      ? "event-config.js에 발표자 신청 링크를 입력하세요."
-      : "Add the speaker application URL in event-config.js.");
+      ? "event-config.js에 발표자 신청 링크 또는 참가 신청 링크를 입력하세요."
+      : "Add the speaker application URL or RSVP URL in event-config.js.");
   }
 
   function configureEmail() {
@@ -166,23 +188,25 @@
   function configureQrCode() {
     const qr = config.qrCode && typeof config.qrCode === "object" ? config.qrCode : {};
     const imageUrl = String(qr.imageUrl || "").trim();
-    const linkUrl = String(qr.linkUrl || "").trim();
+    const linkUrl = String(qr.linkUrl || config.rsvpUrl || "").trim();
     const link = byId("qr-link");
     const image = byId("qr-image");
     const placeholder = byId("qr-placeholder");
     const label = byId("qr-label");
     const helper = byId("qr-helper");
 
-    if (!link || !image || !placeholder || !label || !helper) return;
+    if (!link || !image || !placeholder || !label) return;
 
-    label.textContent = localized(qr.label, state.lang === "ko" ? "신청 QR 코드" : "Application QR code");
-    helper.textContent = localized(
-      qr.helper,
-      state.lang === "ko"
-        ? "event-config.js에서 QR 이미지와 연결 주소를 설정하세요."
-        : "Set the QR image and destination in event-config.js."
-    );
-    image.alt = localized(qr.alt, state.lang === "ko" ? "신청 QR 코드" : "Application QR code");
+    label.textContent = localized(qr.label, state.lang === "ko" ? "참가 신청 QR" : "Participant RSVP QR");
+    if (helper) {
+      helper.textContent = localized(
+        qr.helper,
+        state.lang === "ko"
+          ? "스캔하면 참가 신청 폼으로 이동합니다."
+          : "Scan to open the participant RSVP form."
+      );
+    }
+    image.alt = localized(qr.alt, state.lang === "ko" ? "참가 신청 폼 QR 코드" : "QR code for the participant RSVP form");
 
     const revealImage = () => {
       image.classList.add("is-visible");
@@ -280,10 +304,10 @@
       return;
     }
 
-    const title = localized(config.eventName, "ICML 2026 Mathematical Optimization Meetup");
+    const title = localized(config.eventName, "ICML 2026 Mathematical Optimization Coffee Chat & Dinner");
     const description = localized(config.calendarDescription);
     const location = localized(config.calendarLocation || config.locationLabel, "Cafe Underline, Seoul");
-    const uid = `icml-2026-mathematical-optimization-meetup-${Date.now()}@local`;
+    const uid = `icml-2026-mathopt-coffee-chat-dinner-${Date.now()}@local`;
     const stamp = toIcsUtc(new Date().toISOString());
     const start = toIcsUtc(config.startISO);
     const endDate = config.endISO ? new Date(config.endISO) : null;
@@ -309,7 +333,7 @@
     const ics = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//ICML 2026 Mathematical Optimization Meetup//EN",
+      "PRODID:-//ICML 2026 Mathematical Optimization Coffee Chat Dinner//EN",
       "CALSCALE:GREGORIAN",
       "METHOD:PUBLISH",
       ...eventLines,
@@ -320,7 +344,7 @@
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = "icml-2026-mathematical-optimization-meetup.ics";
+    link.download = "icml-2026-mathopt-coffee-chat-dinner.ics";
     document.body.appendChild(link);
     link.click();
     link.remove();
