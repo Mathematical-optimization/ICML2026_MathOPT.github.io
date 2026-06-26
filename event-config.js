@@ -21,11 +21,11 @@ window.EVENT_CONFIG = Object.freeze({
   },
   locationLabel: {
     en: "Cafe Underline · dinner venue shared July 5",
-    ko: "카페 언더라인 · 식사 장소는 7월 5일 안내"
+    ko: "카페 · 식사 장소는 7월 5일 안내"
   },
   coffeeVenue: {
-    en: "Cafe Underline",
-    ko: "카페 언더라인"
+    en: "Cafe",
+    ko: "카페"
   },
   dinnerVenue: {
     en: "Shared with confirmed participants on July 5",
@@ -33,7 +33,7 @@ window.EVENT_CONFIG = Object.freeze({
   },
   audienceLabel: {
     en: "ICML 2026 attendees interested in mathematical optimization",
-    ko: "수학적 최적화 연구에 관심 있는 ICML 2026 참가자"
+    ko: "수학적 최적화에 관심 있는 ICML 2026 참가자"
   },
   feeLabel: {
     en: "KRW 10,000",
@@ -73,11 +73,11 @@ window.EVENT_CONFIG = Object.freeze({
   },
 
   calendarLocation: {
-    en: "Cafe Underline, Seoul — dinner venue to be shared July 5",
-    ko: "카페 언더라인, 서울 — 식사 장소는 7월 5일 안내"
+    en: "Cafe, Seoul — dinner venue to be shared July 5",
+    ko: "카페, 서울 — 식사 장소는 7월 5일 안내"
   },
   calendarDescription: {
     en: "An independent, unofficial coffee chat and dinner for ICML 2026 attendees interested in mathematical optimization. Not organized, endorsed, sponsored, or supervised by ICML.",
-    ko: "수학적 최적화 연구에 관심 있는 ICML 2026 참가자를 위한 비공식 독립 커피챗 및 저녁 모임입니다. ICML이 주최·승인·후원·관리하는 공식 행사가 아닙니다."
+    ko: "수학적 최적화에 관심 있는 ICML 2026 참가자를 위한 비공식 모임입니다. ICML이 주최·승인·후원·관리하는 공식 행사가 아닙니다."
   }
 });
